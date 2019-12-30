@@ -3,6 +3,7 @@ require 'open-uri'
 require 'attr_extras'
 require 'nokogiri'
 require 'English'
+require 'cgi'
 
 module MalParser
   autoload :Configuration, 'mal_parser/configuration'
