@@ -1,10 +1,11 @@
 module MalParser
-  module ParseHelper
+  module ParseHelper # rubocop:disable Metrics/ModuleLength
     NOKOGIRI_SAVE_OPTIONS = Nokogiri::XML::Node::SaveOptions::AS_HTML |
       Nokogiri::XML::Node::SaveOptions::NO_DECLARATION
 
     NO_SYNOPSIS_TEXT = [
       'No synopsis has been added for this',
+      'No synopsis information has been added to this',
       'No biography written.',
       'No summary yet.'
     ]
@@ -19,6 +20,14 @@ module MalParser
       /(?<type>#{TYPE.keys.join '|'})/
     }mix
     INVALID_ID_REGEXP = /<div class="badresult">Invalid ID provided/
+
+    SPOILER_BLOCK_REGEXP = %r{
+      <div\ class="spoiler" .*? value="Hide\ spoiler">
+        (.*?)
+      </span></div>
+    }mix
+
+    ID_REGEXP = %r{/(?<id>\d+)(?:/|$)}
 
     def doc
       @doc ||= Nokogiri::HTML html
@@ -42,7 +51,7 @@ module MalParser
       end
     end
 
-    def parse_line text
+    def parse_line text # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
       node = dark_texts.find { |v| v.text.start_with? "#{text}:" }&.next
       return unless node
 
@@ -50,7 +59,7 @@ module MalParser
       text.empty? && node.next&.name != 'div' ? node.next&.text&.strip : text
     end
 
-    def parse_links text
+    def parse_links text # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
       node = dark_texts.find { |v| v.text.start_with? "#{text}:" }&.parent
 
       if !node || node.text =~ /None found/
@@ -83,13 +92,12 @@ module MalParser
       else
         Date.parse(date)
       end
-
     rescue StandardError
       nil
     end
 
     def extract_id url
-      url.match(%r{/(?<id>\d+)(/|$)})[:id].to_i
+      url.match(ID_REGEXP)[:id].to_i
     end
 
     def extract_type url
@@ -102,6 +110,8 @@ module MalParser
       fixed_text = Nokogiri::HTML::DocumentFragment
         .parse(html)
         .to_html(save_with: ParseHelper::NOKOGIRI_SAVE_OPTIONS)
+        .gsub(/\r|\n/, '')
+        .gsub(SPOILER_BLOCK_REGEXP, '[spoiler_block=Spoiler]\1[/spoiler_block]')
 
       CGI.unescapeHTML(fixed_text) unless fixed_text&.empty?
     end

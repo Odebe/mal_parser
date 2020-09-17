@@ -4,9 +4,9 @@ module MalParser
       japanese fullname seyu synopsis
     ]
     SYNOPSYS_REGEXP = %r{
-      <div \s class="normal_header" [\s\S]*? </div>
-        (?<html> [\s\S]*? )
-      (<div \s class="normal_header"|<br><br><div \s style="padding:)
+      <h2 \s class="normal_header" [\s\S]*? </h2>
+        (?<html> .*? )
+      (?:<div \s class="normal_header"|<br><br><div \s style="padding:)
     }mix
     SEYU_SELECTOR = '.normal_header:contains("Voice Actors") ~ table tr td:last'
 
@@ -17,7 +17,7 @@ module MalParser
     end
 
     def fullname
-      at_css('h1').text.gsub('  ', ' ')
+      at_css('.h1-title').text.gsub('  ', ' ')
     end
 
     def seyu
@@ -32,7 +32,7 @@ module MalParser
     end
 
     def parse_synopsis
-      at_css('#content > table > tr > td:nth-child(2)').to_html
+      at_css('#content > table > tr > td:nth-child(2)')&.inner_html
     end
 
     def parse_seyu seyu_doc
